@@ -7,7 +7,7 @@ import time
 import bpy
 import numpy as np
 
-from . import imaging, packer, palettes, rig
+from . import gif, imaging, packer, palettes, rig
 
 NORMAL_MAT = 'PSF_NormalPass'
 
@@ -266,7 +266,7 @@ def bake(context, s, preview=None, report=None):
         want_normals = False
     else:
         jobs = animation_jobs(context, s)
-        dirs = rig.directions(s)
+        dirs = rig.render_directions(s)
         want_normals = s.export_normals
 
     with RenderState(scene, s):
@@ -283,7 +283,13 @@ def bake(context, s, preview=None, report=None):
                     fr = frame_numbers(start, end, s.frame_step)
                     for f in fr[::max(1, len(fr) // 12)] + [fr[-1]]:
                         scene.frame_set(f)
-                        sample.extend(rig._world_corners(context.evaluated_depsgraph_get(), meshes))
+                        pts = np.array(rig._world_corners(context.evaluated_depsgraph_get(), meshes))
+                        if s.follow_target and len(pts):
+                            # framing relative to the moving character, not the world
+                            a = rig.anchor(s)
+                            pts[:, 0] += rig_obj.location.x - a.x
+                            pts[:, 1] += rig_obj.location.y - a.y
+                        sample.extend(pts.tolist())
                 if sample:
                     off = rig.FACING_OFFSET[s.facing]
                     s.ortho_scale = rig.fit(np.array(sample), tuple(rig_obj.location), rig.elevation(s),
@@ -299,7 +305,8 @@ def bake(context, s, preview=None, report=None):
         wm = context.window_manager
         wm.progress_begin(0, max(total, 1))
         tmp = tempfile.mkdtemp(prefix='psf_')
-        stage = []  # (anim, direction, index, lo, normals_lo)
+        stage = {}  # (anim, direction, index) -> (lo, normals_lo, pivot)
+        base_z = rig_obj.location.z
         try:
             for name, action, start, end, _ in jobs:
                 if action is not None:
@@ -308,9 +315,12 @@ def bake(context, s, preview=None, report=None):
                     rig.set_direction(s, rig_obj, d)
                     for i, f in enumerate(frame_numbers(start, end, s.frame_step)):
                         scene.frame_set(f)
+                        if s.follow_target:
+                            rig.follow(s, rig_obj, base_z)
+                        piv = rig.pivot(scene, cam, s)
                         hi = render_color(scene, os.path.join(tmp, 'c.png'))
                         nh = render_normals(scene, os.path.join(tmp, 'n.exr')) if want_normals else None
-                        stage.append((name, d, i) + imaging.stage1(hi, cfg, nh))
+                        stage[(name, d, i)] = imaging.stage1(hi, cfg, nh) + (piv,)
                         done += 1
                         wm.progress_update(done)
                         if report:
@@ -319,12 +329,31 @@ def bake(context, s, preview=None, report=None):
             wm.progress_end()
             rig.set_direction(s, rig_obj, 'S')
 
-    palette = resolve_palette(s, [st[3] for st in stage])
+    # Mirrored directions: horizontal flip of their source (normals: negate X)
+    if preview is None and s.mirror_directions:
+        for (name, d, i), (lo, n_lo, piv) in list(stage.items()):
+            for dst, src in rig.MIRROR_SOURCE.items():
+                if src == d and dst in rig.directions(s):
+                    n_m = None
+                    if n_lo is not None:
+                        n_m = n_lo[:, ::-1].copy()
+                        n_m[..., 0] *= -1
+                    stage[(name, dst, i)] = (lo[:, ::-1].copy(), n_m, (round(1 - piv[0], 4), piv[1]))
+
+    palette = resolve_palette(s, [v[0] for v in stage.values()])
     duration = int(round(1000 / max(1, s.fps)))
     frames = []
-    for name, d, i, lo, n_lo in stage:
-        rgba, nrm = imaging.stage2(lo, n_lo, cfg, palette)
-        frames.append(packer.Frame(f'{name}_{d}_{i:03d}', name, d, i, rgba, nrm, duration))
+    order = rig.directions(s) if preview is None else dirs
+    for name, action, start, end, _ in jobs:
+        for d in order:
+            for i in range(len(frame_numbers(start, end, s.frame_step))):
+                if (name, d, i) not in stage:
+                    continue
+                lo, n_lo, piv = stage[(name, d, i)]
+                rgba, nrm = imaging.stage2(lo, n_lo, cfg, palette)
+                fr = packer.Frame(f'{name}_{d}_{i:03d}', name, d, i, rgba, nrm, duration)
+                fr.pivot = piv
+                frames.append(fr)
     loops = {j[0]: j[4] for j in jobs}
     return frames, palette, loops
 
@@ -354,6 +383,15 @@ def export(s, frames, loops):
             paths.append(os.path.join(out_dir, f'{base}_frames_lit.tres'))
             packer.export_godot_spriteframes(paths[-1], frames, f'{base}_canvas.tres', s.fps, loops,
                                              atlas_type='CanvasTexture')
+    if s.export_gifs:
+        gdir = os.path.join(out_dir, f'{base}_gifs')
+        os.makedirs(gdir, exist_ok=True)
+        groups = {}
+        for f in frames:
+            groups.setdefault(f'{f.anim}_{f.direction}', []).append(f.rgba)
+        for key, imgs in groups.items():
+            gif.write_gif(os.path.join(gdir, f'{key}.gif'), imgs, 1000 / max(1, s.fps), s.gif_scale)
+        paths.append(gdir)
     if s.export_frames:
         fdir = os.path.join(out_dir, f'{base}_frames')
         for f in frames:

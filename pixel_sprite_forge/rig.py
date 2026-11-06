@@ -6,7 +6,7 @@ import bpy
 import numpy as np
 from mathutils import Vector
 
-from .properties import DIRECTIONS_4, DIRECTIONS_8
+from .properties import DIRECTIONS_2, DIRECTIONS_4, DIRECTIONS_8
 
 RIG_NAME = 'PSF_Rig'
 CAM_NAME = 'PSF_Camera'
@@ -16,11 +16,45 @@ COLLECTION = 'Pixel Sprite Forge'
 # "S" = character faces the viewer (down on screen), "E" = faces screen-right.
 DIR_YAW = {'S': 0, 'SE': -45, 'E': -90, 'NE': -135, 'N': 180, 'NW': 135, 'W': 90, 'SW': 45}
 FACING_OFFSET = {'NEG_Y': 0, 'POS_Y': 180, 'POS_X': 90, 'NEG_X': -90}
+# Directions that can be produced by flipping another one horizontally
+MIRROR_SOURCE = {'W': 'E', 'NW': 'NE', 'SW': 'SE'}
 VIEW_ELEVATION = {'SIDE': 0.0, 'THREE_QUARTER': 30.0, 'ISOMETRIC': 35.264, 'TOP': 89.9}
 
 
 def directions(settings):
-    return {'1': ['S'], '4': DIRECTIONS_4, '8': DIRECTIONS_8}[settings.directions]
+    return {'1': ['S'], '2': DIRECTIONS_2, '4': DIRECTIONS_4, '8': DIRECTIONS_8}[settings.directions]
+
+
+def render_directions(settings):
+    """Directions that actually need a render (mirrored ones are flipped copies)."""
+    dirs = directions(settings)
+    if not settings.mirror_directions:
+        return dirs
+    return [d for d in dirs if not (d in MIRROR_SOURCE and MIRROR_SOURCE[d] in dirs)]
+
+
+def anchor(settings):
+    """World position the camera follows / the sprite pivot (character's feet)."""
+    t = settings.target
+    if t is None:
+        return Vector((0, 0, 0))
+    if t.type == 'ARMATURE' and settings.root_bone and settings.root_bone in t.pose.bones:
+        head = t.matrix_world @ t.pose.bones[settings.root_bone].head
+        return Vector((head.x, head.y, t.matrix_world.translation.z))
+    return t.matrix_world.translation.copy()
+
+
+def follow(settings, rig_obj, base_z):
+    a = anchor(settings)
+    rig_obj.location = (a.x, a.y, base_z)
+
+
+def pivot(scene, cam, settings):
+    """Normalized (x, y) of the character's feet inside the cell, y down."""
+    from bpy_extras.object_utils import world_to_camera_view
+    bpy.context.view_layer.update()
+    v = world_to_camera_view(scene, cam, anchor(settings))
+    return (round(float(v.x), 4), round(float(1.0 - v.y), 4))
 
 
 def elevation(settings):

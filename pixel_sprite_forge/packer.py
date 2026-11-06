@@ -90,13 +90,14 @@ def read_png(path):
 
 class Frame:
     __slots__ = ('name', 'anim', 'direction', 'index', 'rgba', 'normal', 'duration_ms',
-                 'trim', 'x', 'y')
+                 'trim', 'x', 'y', 'pivot')
 
     def __init__(self, name, anim, direction, index, rgba, normal=None, duration_ms=100):
         self.name, self.anim, self.direction, self.index = name, anim, direction, index
         self.rgba, self.normal, self.duration_ms = rgba, normal, duration_ms
         self.trim = None
         self.x = self.y = 0
+        self.pivot = (0.5, 1.0)  # feet position, normalized, y down
 
 
 def _next_pow2(v):
@@ -196,7 +197,7 @@ def export_json(path, frames, image_name, w, h, fps, app_version='1.0.0'):
             'trimmed': (tw, th) != (cell_w, cell_h),
             'spriteSourceSize': {'x': tx, 'y': ty, 'w': tw, 'h': th},
             'sourceSize': {'w': cell_w, 'h': cell_h},
-            'pivot': {'x': 0.5, 'y': 1.0},
+            'pivot': {'x': f.pivot[0], 'y': f.pivot[1]},
             'duration': f.duration_ms,
         }
     groups = _anim_groups(frames)

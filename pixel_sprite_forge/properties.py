@@ -7,6 +7,7 @@ from . import palettes
 
 DIRECTIONS_8 = ['S', 'SE', 'E', 'NE', 'N', 'NW', 'W', 'SW']
 DIRECTIONS_4 = ['S', 'E', 'N', 'W']
+DIRECTIONS_2 = ['E', 'W']
 
 
 def _palette_changed(self, context):
@@ -35,6 +36,7 @@ class PSF_Settings(bpy.types.PropertyGroup):
                             description='Objeto animado (armature o malla). La cámara se centra en él')
     directions: EnumProperty(name='Direcciones', default='8', items=[
         ('1', '1 (frente)', 'Solo la vista frontal (S)'),
+        ('2', '2 (E, O)', 'Derecha e izquierda: juegos de plataformas / side-scroller'),
         ('4', '4 (N, S, E, O)', 'Cuatro direcciones cardinales'),
         ('8', '8 (con diagonales)', 'Cardinales + diagonales: S, SE, E, NE, N, NW, W, SW')])
     camera_view: EnumProperty(name='Vista', default='THREE_QUARTER', items=[
@@ -48,6 +50,15 @@ class PSF_Settings(bpy.types.PropertyGroup):
     facing: EnumProperty(name='El personaje mira hacia', default='NEG_Y', items=[
         ('NEG_Y', '-Y (estándar Blender)', ''), ('POS_Y', '+Y', ''),
         ('POS_X', '+X', ''), ('NEG_X', '-X', '')])
+    mirror_directions: BoolProperty(
+        name='Espejar W/NW/SW', default=False,
+        description='Genera W, NW y SW volteando E, NE y SE (renderiza ~40% menos). '
+                    'Úsalo si el personaje es simétrico y la luz viene de frente')
+    follow_target: BoolProperty(
+        name='Seguir al personaje', default=False,
+        description='La cámara acompaña al personaje en cada frame: para animaciones con desplazamiento (root motion)')
+    root_bone: StringProperty(name='Hueso raíz', default='',
+                              description='Opcional: hueso cuyo desplazamiento sigue la cámara (p. ej. "root" o "hips")')
     fit_padding: FloatProperty(name='Margen', default=0.08, min=0, max=1, subtype='FACTOR',
                                description='Espacio libre alrededor del personaje dentro de la celda')
     auto_fit: BoolProperty(name='Encuadre automático', default=True,
@@ -131,6 +142,9 @@ class PSF_Settings(bpy.types.PropertyGroup):
     normal_flip_y: BoolProperty(name='Invertir Y (DirectX)', default=False,
                                 description='Godot y Unity usan la convención OpenGL (Y+): déjalo apagado')
     export_frames: BoolProperty(name='PNG por frame', default=False)
+    export_gifs: BoolProperty(name='GIF animados', default=False,
+                              description='Un GIF por animación y dirección, ideal para compartir o revisar')
+    gif_scale: IntProperty(name='Escala GIF', default=4, min=1, max=12)
     standard_view: BoolProperty(name='Color "Standard" al hornear', default=True,
                                 description='Usa la transformación de vista Standard durante el render (AgX/Filmic desaturan los colores)')
 

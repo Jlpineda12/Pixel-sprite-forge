@@ -53,6 +53,12 @@ class PSF_PT_camera(_Panel, bpy.types.Panel):
         if s.camera_view == 'CUSTOM':
             lay.prop(s, 'elevation')
         lay.prop(s, 'facing')
+        if s.directions == '8':
+            lay.prop(s, 'mirror_directions')
+        row = lay.row(align=True)
+        row.prop(s, 'follow_target')
+        if s.follow_target and s.target and s.target.type == 'ARMATURE':
+            row.prop_search(s, 'root_bone', s.target.pose, 'bones', text='')
         row = lay.row(align=True)
         row.prop(s, 'auto_fit')
         sub = row.row()
@@ -65,13 +71,14 @@ class PSF_PT_camera(_Panel, bpy.types.Panel):
         box = lay.box()
         box.label(text='Ver dirección:')
         compass = [['NW', 'N', 'NE'], ['W', None, 'E'], ['SW', 'S', 'SE']]
+        mirrored = set(rig.directions(s)) - set(rig.render_directions(s))
         for row_dirs in compass:
             row = box.row(align=True)
             for d in row_dirs:
                 if d is None:
                     row.label(text='', icon='USER')
                 elif d in dirs:
-                    op = row.operator('pixel_forge.look_direction', text=d,
+                    op = row.operator('pixel_forge.look_direction', text=d + ('↔' if d in mirrored else ''),
                                       depress=(s.preview_direction == d))
                     op.direction = d
                 else:
@@ -198,9 +205,15 @@ class PSF_PT_export(_Panel, bpy.types.Panel):
         if s.export_normals:
             col.prop(s, 'normal_flip_y')
         col.prop(s, 'export_frames')
+        row = col.row(align=True)
+        row.prop(s, 'export_gifs')
+        if s.export_gifs:
+            row.prop(s, 'gif_scale', text='×')
 
         n_dirs = len(rig.directions(s))
-        lay.label(text=f'{n_dirs} direcciones · celda {rig.cell_size(s)} px', icon='INFO')
+        n_render = len(rig.render_directions(s))
+        extra = f' ({n_render} renderizadas)' if n_render != n_dirs else ''
+        lay.label(text=f'{n_dirs} direcciones{extra} · celda {rig.cell_size(s)} px', icon='INFO')
         row = lay.row()
         row.scale_y = 1.8
         row.operator('pixel_forge.bake', icon='RENDER_ANIMATION')

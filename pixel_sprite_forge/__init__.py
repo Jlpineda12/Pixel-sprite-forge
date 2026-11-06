@@ -9,7 +9,7 @@ pestaña "Pixel Forge".
 bl_info = {
     'name': 'Pixel Sprite Forge',
     'author': 'Jose Luis Pineda (Jlpineda12)',
-    'version': (1, 0, 0),
+    'version': (1, 1, 0),
     'blender': (4, 2, 0),
     'location': 'Vista 3D > Barra lateral (N) > Pixel Forge',
     'description': '3D animado → sprite sheets de pixel art en 8 direcciones con paletas, dithering, '
@@ -20,8 +20,8 @@ bl_info = {
 
 if 'bpy' in locals():  # support "Reload Scripts"
     import importlib
-    from . import palettes, imaging, packer, properties, rig, baker, operators, ui
-    for m in (palettes, imaging, packer, properties, rig, baker, operators, ui):
+    from . import palettes, imaging, packer, gif, properties, rig, baker, operators, ui
+    for m in (palettes, imaging, packer, gif, properties, rig, baker, operators, ui):
         importlib.reload(m)
 
 import bpy  # noqa: E402
