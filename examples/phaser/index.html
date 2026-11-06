@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel Sprite Forge · demo Phaser</title>
+  <style>
+    html, body { margin: 0; background: #0d0221; color: #c5ffd8; font: 16px monospace; }
+    #game { display: grid; place-items: center; height: 100vh; }
+    p { position: fixed; bottom: 8px; width: 100%; text-align: center; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+</head>
+<body>
+  <div id="game"></div>
+  <p>Flechas para caminar en 8 direcciones · sprites generados con Pixel Sprite Forge</p>
+  <script>
+    // Picks "<action>_<dir>" from the JSON "animations" map exported by the addon.
+    const DIRS_8 = ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'];
+
+    class Demo extends Phaser.Scene {
+      preload() {
+        this.load.atlas('knight', 'assets/knight.png', 'assets/knight.json');
+        this.load.json('knightMeta', 'assets/knight.json');
+      }
+
+      create() {
+        const meta = this.cache.json.get('knightMeta');
+        const fps = meta.meta.fps || 12;
+        for (const [key, names] of Object.entries(meta.animations)) {
+          this.anims.create({
+            key,
+            frames: names.map((frame) => ({ key: 'knight', frame })),
+            frameRate: fps,
+            repeat: -1
+          });
+        }
+        this.cameras.main.setBackgroundColor('#1d0836');
+        this.knight = this.add.sprite(240, 180, 'knight').setScale(3).setOrigin(0.5, 0.5);
+        this.facing = 'S';
+        this.knight.play('walk_S');
+        this.knight.anims.pause();
+        this.cursors = this.input.keyboard.createCursorKeys();
+      }
+
+      update(_, dt) {
+        const c = this.cursors;
+        const v = new Phaser.Math.Vector2((c.right.isDown ? 1 : 0) - (c.left.isDown ? 1 : 0),
+                                          (c.down.isDown ? 1 : 0) - (c.up.isDown ? 1 : 0));
+        if (v.lengthSq() > 0) {
+          v.normalize();
+          this.knight.x += v.x * dt * 0.12;
+          this.knight.y += v.y * dt * 0.12;
+          const idx = Phaser.Math.Wrap(Math.round(v.angle() / (Math.PI / 4)), 0, 8);
+          this.facing = DIRS_8[idx];
+          this.knight.play(`walk_${this.facing}`, true);
+        } else {
+          this.knight.anims.pause(this.knight.anims.currentAnim?.frames[0]);
+        }
+      }
+    }
+
+    new Phaser.Game({
+      type: Phaser.AUTO, parent: 'game', width: 480, height: 360,
+      pixelArt: true, scene: Demo
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+schema_version = "1.0.0"
+
+id = "pixel_sprite_forge"
+version = "1.0.0"
+name = "Pixel Sprite Forge"
+tagline = "3D animado a sprite sheets pixel art en 8 direcciones"
+maintainer = "Jose Luis Pineda <https://github.com/Jlpineda12>"
+type = "add-on"
+website = "https://github.com/Jlpineda12/pixel-sprite-forge"
+tags = ["Render", "Animation", "Import-Export"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+
+[permissions]
+files = "Escribe sprite sheets, JSON y recursos de Godot en la carpeta de salida"
