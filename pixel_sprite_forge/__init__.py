@@ -9,7 +9,7 @@ pestaña "Pixel Forge".
 bl_info = {
     'name': 'Pixel Sprite Forge',
     'author': 'Jose Luis Pineda (Jlpineda12)',
-    'version': (1, 1, 0),
+    'version': (1, 1, 1),
     'blender': (4, 2, 0),
     'location': 'Vista 3D > Barra lateral (N) > Pixel Forge',
     'description': '3D animado → sprite sheets de pixel art en 8 direcciones con paletas, dithering, '

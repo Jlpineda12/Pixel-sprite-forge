@@ -50,7 +50,7 @@ Animar pixel art cuadro a cuadro (caminar, atacar, saltar… × 8 direcciones) l
 
 ## 📥 Instalación
 
-1. Descarga `pixel_sprite_forge-1.1.0.zip` (o genera el tuyo con `python3 build.py`).
+1. Descarga `pixel_sprite_forge-1.1.1.zip` (o genera el tuyo con `python3 build.py`).
 2. Blender 4.2+ → **Editar › Preferencias › Add-ons** → menú ⌄ → **Instalar desde disco…** → elige el `.zip`.
 3. En la Vista 3D pulsa **N** y abre la pestaña **Pixel Forge**.
 
@@ -150,7 +150,7 @@ La prueba de Blender construye un personaje con una "nariz" roja hacia `-Y`, hor
 
 - La vista previa se muestra en el **Editor de Imágenes** (no es un shader del viewport): así es exacta a la exportación. El compositor de Blender no puede mapear a una paleta exacta y su API cambió en 5.0, por eso el procesado se hace en numpy.
 - Con *Espejar* el dithering Bayer no es simétrico píxel a píxel (la silueta sí); si la luz viene de un lado, desactívalo.
-- Probado con **Cycles (CPU) en Blender 5.2.3**. EEVEE y Workbench usan el mismo código pero no se pudieron probar en el entorno sin GPU. La importación en Godot/Unity no se probó dentro de los motores; la demo de Phaser sí.
+- Probado en **Blender 5.2.3 con Cycles, EEVEE y Workbench**. Con Workbench el color sale del *Viewport Display* de cada material, y el pase de normales se hace automáticamente con EEVEE (Workbench ignora los nodos). La importación en Godot/Unity no se probó dentro de los motores; la demo de Phaser sí.
 
 ## 🗂️ Estructura
 

@@ -124,6 +124,10 @@ class RenderState:
         eng = _engine_id(self.s.engine)
         if eng:
             r.engine = eng
+        shading = getattr(sc.display, 'shading', None)
+        self.saved['wb_color'] = shading.color_type if shading else None
+        if shading and r.engine == 'BLENDER_WORKBENCH':
+            shading.color_type = 'MATERIAL'   # Viewport Display colour of each material
         r.film_transparent = True
         r.resolution_percentage = 100
         if self.s.standard_view:
@@ -145,6 +149,8 @@ class RenderState:
 
     def __exit__(self, *exc):
         sc, r, v = self.scene, self.scene.render, self.saved
+        if v.get('wb_color') and getattr(sc.display, 'shading', None):
+            sc.display.shading.color_type = v['wb_color']
         r.engine = v['engine']
         r.resolution_x, r.resolution_y, r.resolution_percentage = v['rx'], v['ry'], v['pct']
         r.film_transparent, r.filepath = v['film'], v['path']
@@ -206,6 +212,11 @@ def render_normals(scene, path):
     prev = vl.material_override
     vl.material_override = _normal_material()
     prev_view = scene.view_settings.view_transform
+    prev_engine = r.engine
+    if r.engine == 'BLENDER_WORKBENCH':
+        # Workbench ignores node materials (solid shading): bake the normal
+        # pass with EEVEE (or Cycles) so the override material is evaluated
+        r.engine = _engine_id('EEVEE') or 'CYCLES'
     try:
         r.image_settings.file_format = 'OPEN_EXR'
         r.image_settings.color_mode = 'RGBA'
@@ -216,6 +227,7 @@ def render_normals(scene, path):
     finally:
         vl.material_override = prev
         scene.view_settings.view_transform = prev_view
+        r.engine = prev_engine
     n_world = px[..., :3] * 2.0 - 1.0
     # camera axes (columns): X = screen right, Y = screen up, Z = towards viewer
     bpy.context.view_layer.update()

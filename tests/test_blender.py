@@ -35,7 +35,9 @@ def check(cond, name):
 
 def material(name, color, emit=False):
     m = bpy.data.materials.new(name)
-    m.use_nodes = True
+    m.diffuse_color = (*color, 1)   # Workbench shows the Viewport Display colour
+    if not getattr(m, 'use_nodes', True):
+        m.use_nodes = True
     nt = m.node_tree
     if emit:
         nt.nodes.clear()
