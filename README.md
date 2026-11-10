@@ -106,6 +106,14 @@ Cada caso construye una escena por código, hornea de principio a fin en Blender
 <img src="docs/use-cases/iso-house-8.png" width="120" alt="Casa en 8 direcciones">
 </details>
 
+## 🤓 Hecho con Pixel Sprite Forge: mi humano digital
+
+Mi [humano digital](https://github.com/Jlpineda12/digital-human) se horneó con este addon: un busto modelado por script en Blender, con una animación idle, en **8 direcciones a 128×128**, con mi paleta de 17 colores (`.hex`), contorno adaptativo y *normal map*. El script está en [`digital-human/blender/bake_pixel.py`](https://github.com/Jlpineda12/digital-human/blob/main/blender/bake_pixel.py) y muestra cómo usar el addon sin interfaz (`bpy.ops.pixel_forge.bake()`).
+
+<div align="center">
+<img src="docs/use-cases/jose-turnaround.gif" alt="Jose en pixel art en 8 direcciones" width="100%">
+</div>
+
 ## 🎮 En tu motor
 
 **Godot 4** — arrastra `character_frames.tres` al `sprite_frames` de un `AnimatedSprite2D`. El script [`examples/godot/eight_way_character.gd`](examples/godot/eight_way_character.gd) elige la animación según la dirección de movimiento (8 o 4 direcciones). Para luces 2D (`PointLight2D`) usa `character_frames_lit.tres`.
